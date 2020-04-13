@@ -81,7 +81,7 @@ private:
     //vertexPuller
     struct Head
     {
-        BufferID ID = emptyID;
+        BufferID ID = 0;
         uint64_t offset = 0;
         uint64_t stride = 0;
         AttributeType attrType = AttributeType::EMPTY;
@@ -89,7 +89,7 @@ private:
     };
     struct Indexing
     {
-        BufferID bufferID = emptyID; //0 if not set - buffers use address as ID, 0 is invalid
+        BufferID bufferID = 0; //null if not set - buffers use address as ID, 0 is invalid
         IndexType indexType;
     };
     struct VertexPuller
@@ -98,7 +98,7 @@ private:
         std::array<Head, maxAttributes> heads; 
     };
     std::map<VertexPullerID, VertexPuller*> vertexPullers;
-    VertexPullerID activeVertexPullerID = emptyID;
+    VertexPullerID activeVertexPullerID;
 
     //shader program
     struct ShaderProgram
@@ -109,7 +109,7 @@ private:
         std::array<AttributeType, maxAttributes> attributes{ AttributeType::EMPTY };
     };
     std::map<ProgramID, ShaderProgram*> programs;
-    ProgramID activeProgramID = emptyID;
+    ProgramID activeProgramID = NULL;
 
     struct Color
     {

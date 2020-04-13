@@ -7,6 +7,8 @@
 
 #include <student/gpu.hpp>
 #include<algorithm>
+#include <iostream>
+#include <exception>
 
 
 /// \addtogroup gpu_init
@@ -23,20 +25,8 @@ GPU::GPU(){
 /**
  * @brief Destructor of GPU
  */
-GPU::~GPU(){
-    for (auto program : programs)
-    {
-        deleteProgram(program.first);
-    }
-    for (auto puller : vertexPullers)
-    {
-        deleteVertexPuller(puller.first);
-        unbindVertexPuller();
-    }
-    for (auto buffer : buffers)
-    {
-        deleteBuffer(buffer.first);
-    }
+GPU::~GPU(){  
+    
 }
 
 /// @}
@@ -55,6 +45,9 @@ GPU::~GPU(){
 
 
 BufferID GPU::createBuffer(uint64_t size) {  
+    try
+    {
+        
     Buffer* tmp = new Buffer();
     if (tmp == nullptr)
     {
@@ -73,6 +66,12 @@ BufferID GPU::createBuffer(uint64_t size) {
     BufferID id = reinterpret_cast<BufferID>(tmp);
     buffers.insert({ id, tmp });
     return id;
+    
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 /**
@@ -81,12 +80,19 @@ BufferID GPU::createBuffer(uint64_t size) {
  * @param buffer buffer identificator
  */
 void GPU::deleteBuffer(BufferID buffer) {
+    try{
     auto todelete = buffers.find(buffer);
     if (todelete != buffers.end())
     {
-        delete todelete->second->data;
-        delete todelete->second;
+        delete buffers.find(buffer)->second->data;
+        delete buffers.find(buffer)->second;
         buffers.erase(buffer);
+
+    }
+    }
+    catch (...)
+    {
+        std::cout << "exception 2" << "\n";
     }
 }
 
@@ -99,6 +105,8 @@ void GPU::deleteBuffer(BufferID buffer) {
  * @param data specifies a pointer to new data
  */
 void GPU::setBufferData(BufferID buffer, uint64_t offset, uint64_t size, void const* data) {
+    try
+    { 
     if (!isBuffer(buffer))
         return;
     //ID = address
@@ -107,7 +115,11 @@ void GPU::setBufferData(BufferID buffer, uint64_t offset, uint64_t size, void co
         return;
     //uint8_t* - size is in byte, 1 step in std::copy = byte
     std::copy((uint8_t*)data, ((uint8_t*)(data)) + size, (uint8_t*)(buff->data + offset));
-
+    }
+    catch (...)
+    {
+        std::cout << "exception 3" << "\n";
+    }
    
 }
 
@@ -121,6 +133,7 @@ void GPU::setBufferData(BufferID buffer, uint64_t offset, uint64_t size, void co
  */
 void GPU::getBufferData(BufferID buffer, uint64_t offset, uint64_t size, void* data)
 {
+    try{
    if (!isBuffer(buffer))
         return;
    //ID = address
@@ -130,7 +143,11 @@ void GPU::getBufferData(BufferID buffer, uint64_t offset, uint64_t size, void* d
     uint8_t* buffer_start = (uint8_t*)(buff->data + offset);
     //uint8_t* - size is in byte, 1 step in std::copy = byte
     std::copy(buffer_start, buffer_start + size, (uint8_t*)data);
-       
+    }
+    catch (...)
+    {
+        std::cout << "exception 4" << "\n";
+    }
 }
 
 /**
@@ -141,9 +158,16 @@ void GPU::getBufferData(BufferID buffer, uint64_t offset, uint64_t size, void* d
  * @return true if buffer points to existing buffer on the GPU.
  */
 bool GPU::isBuffer(BufferID buffer) { 
+    try {
+
   
   return buffers.find(buffer) != buffers.end();
-}
+    }
+    catch (...)
+    {
+        std::cout << "exception 5" << "\n";
+    }
+    }
 
 /// @}
 
@@ -159,11 +183,16 @@ bool GPU::isBuffer(BufferID buffer) {
  */
 ObjectID GPU::createVertexPuller     (){
   
-
+    try{
     VertexPuller *table = new VertexPuller();
     VertexPullerID tableID = reinterpret_cast<VertexPullerID>(table);
     vertexPullers.insert({ tableID, table });
     return tableID;
+    }
+    catch (...)
+    {
+        std::cout << "exception 6" << "\n";
+    }
 }
 
 /**
@@ -172,9 +201,15 @@ ObjectID GPU::createVertexPuller     (){
  * @param vao vertex puller identificator
  */
 void     GPU::deleteVertexPuller     (VertexPullerID vao){
+    try{
      auto todelete = reinterpret_cast<VertexPuller*>(vao);
     delete todelete;
     vertexPullers.erase(vao); 
+    }
+    catch (...)
+    {
+        std::cout << "exception 7" << "\n";
+    }
 }
 
 /**
@@ -188,10 +223,15 @@ void     GPU::deleteVertexPuller     (VertexPullerID vao){
  * @param buffer id of buffer
  */
 void     GPU::setVertexPullerHead    (VertexPullerID vao,uint32_t head,AttributeType type,uint64_t stride,uint64_t offset,BufferID buffer){
-    
+    try{
     VertexPuller* vpTable = reinterpret_cast<VertexPuller*>(vao);
     vpTable->heads.at(head) = { buffer, offset, stride, type,false };
-}
+    }
+    catch (...)
+    {
+        std::cout << "exception 8" << "\n";
+    }
+    }
 
 /**
  * @brief This function sets vertex puller indexing.
@@ -201,10 +241,16 @@ void     GPU::setVertexPullerHead    (VertexPullerID vao,uint32_t head,Attribute
  * @param buffer buffer with indices
  */
 void     GPU::setVertexPullerIndexing(VertexPullerID vao,IndexType type,BufferID buffer){
+    try{
     VertexPuller* vertexPuller = reinterpret_cast<VertexPuller*>(vao);
     vertexPuller->indexing.indexType = type;
     vertexPuller->indexing.bufferID = buffer;
-}
+    }
+    catch (...)
+    {
+        std::cout << "exception 9" << "\n";
+    }
+    }
 
 /**
  * @brief This function enables vertex puller's head.
@@ -213,9 +259,14 @@ void     GPU::setVertexPullerIndexing(VertexPullerID vao,IndexType type,BufferID
  * @param head head id
  */
 void     GPU::enableVertexPullerHead (VertexPullerID vao,uint32_t head){
-
+    try{
     VertexPuller* vpTable = reinterpret_cast<VertexPuller*>(vao);
     vpTable->heads.at(head).enabled = true;
+    }
+    catch (...)
+    {
+        std::cout << "exception 10" << "\n";
+    }
 }
 
 /**
@@ -226,9 +277,14 @@ void     GPU::enableVertexPullerHead (VertexPullerID vao,uint32_t head){
  */
 void     GPU::disableVertexPullerHead(VertexPullerID vao,uint32_t head){
 
-   
+   try{
     VertexPuller* vpTable = reinterpret_cast<VertexPuller*>(vao);
     vpTable->heads.at(head).enabled = false;
+   }
+   catch (...)
+   {
+       std::cout << "exception 11" << "\n";
+   }
 }
 
 /**
@@ -237,15 +293,26 @@ void     GPU::disableVertexPullerHead(VertexPullerID vao,uint32_t head){
  * @param vao id of vertex puller
  */
 void     GPU::bindVertexPuller       (VertexPullerID vao){
-    
+    try{
         activeVertexPullerID = vao;
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 /**
  * @brief This function deactivates vertex puller.
  */
 void     GPU::unbindVertexPuller     (){
+    try{
     activeVertexPullerID = emptyID;
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 /**
@@ -256,7 +323,13 @@ void     GPU::unbindVertexPuller     (){
  * @return true, if vertex puller "vao" exists
  */
 bool     GPU::isVertexPuller         (VertexPullerID vao){
+    try{
     return vertexPullers.find(vao) != vertexPullers.end();
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 /// @}
@@ -271,10 +344,17 @@ bool     GPU::isVertexPuller         (VertexPullerID vao){
  * @return shader program id
  */
 ProgramID        GPU::createProgram         (){
+    try{
+
     ShaderProgram* program = new ShaderProgram();
     ProgramID id= reinterpret_cast<ProgramID>(program);
     programs.insert({ id, program });
     return id;
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 /**
@@ -283,9 +363,15 @@ ProgramID        GPU::createProgram         (){
  * @param prg shader program id
  */
 void             GPU::deleteProgram         (ProgramID prg){
+    try{
     auto todelete = programs.find(prg);
-    delete todelete->second;
+  //  delete todelete->second;
     programs.erase(prg);
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 /**
@@ -296,10 +382,15 @@ void             GPU::deleteProgram         (ProgramID prg){
  * @param fs fragment shader
  */
 void             GPU::attachShaders         (ProgramID prg,VertexShader vs,FragmentShader fs){
-
+    try{
     ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
     program->fragmentShader = fs;
     program->vertexShader = vs;
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 /**
@@ -310,8 +401,14 @@ void             GPU::attachShaders         (ProgramID prg,VertexShader vs,Fragm
  * @param type type of attribute
  */
 void             GPU::setVS2FSType          (ProgramID prg,uint32_t attrib,AttributeType type){
+    try{
     ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
     program->attributes.at(attrib) = type;
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
     
 }
 
@@ -321,9 +418,13 @@ void             GPU::setVS2FSType          (ProgramID prg,uint32_t attrib,Attri
  * @param prg shader program id
  */
 void             GPU::useProgram            (ProgramID prg){
-
+    try{
         activeProgramID = prg;
-    
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
     
 }
 
@@ -336,8 +437,14 @@ void             GPU::useProgram            (ProgramID prg){
  */
 bool             GPU::isProgram             (ProgramID prg){
 
-    
+    try{
+
     return programs.find(prg) != programs.end();
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 /**
@@ -349,10 +456,16 @@ bool             GPU::isProgram             (ProgramID prg){
  */
 void             GPU::programUniform1f      (ProgramID prg,uint32_t uniformId,float     const&d){
 
+    try{
     ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
     if (uniformId < maxUniforms)
     {
         program->uniforms.uniform[uniformId].v1 = d;
+    }
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
     }
 }
 
@@ -364,11 +477,17 @@ void             GPU::programUniform1f      (ProgramID prg,uint32_t uniformId,fl
  * @param d value of uniform variable
  */
 void             GPU::programUniform2f      (ProgramID prg,uint32_t uniformId,glm::vec2 const&d){
+   try{
     ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
     if (uniformId < maxUniforms)
     {
         program->uniforms.uniform[uniformId].v2 = d;
     }
+   }
+   catch (...)
+   {
+       std::cout << "exception 1" << "\n";
+   }
 }
 
 /**
@@ -379,10 +498,15 @@ void             GPU::programUniform2f      (ProgramID prg,uint32_t uniformId,gl
  * @param d value of uniform variable
  */
 void             GPU::programUniform3f      (ProgramID prg,uint32_t uniformId,glm::vec3 const&d){
-    ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
+    try{    ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
     if (uniformId < maxUniforms)
     {
         program->uniforms.uniform[uniformId].v3 = d;
+    }
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
     }
 }
 
@@ -394,10 +518,16 @@ void             GPU::programUniform3f      (ProgramID prg,uint32_t uniformId,gl
  * @param d value of uniform variable
  */
 void             GPU::programUniform4f      (ProgramID prg,uint32_t uniformId,glm::vec4 const&d){
+    try{
     ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
     if (uniformId < maxUniforms)
     {
         program->uniforms.uniform[uniformId].v4 = d;
+    }
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
     }
 }
 
@@ -409,11 +539,17 @@ void             GPU::programUniform4f      (ProgramID prg,uint32_t uniformId,gl
  * @param d value of uniform variable
  */
 void             GPU::programUniformMatrix4f(ProgramID prg,uint32_t uniformId,glm::mat4 const&d){
+    try{
   /// Místo 1 floatu nahrává matici 4x4 (16 floatů).
     ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
     if (uniformId < maxUniforms)
     {
         program->uniforms.uniform[uniformId].m4 = d;
+    }
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
     }
 }
 
@@ -434,20 +570,37 @@ void             GPU::programUniformMatrix4f(ProgramID prg,uint32_t uniformId,gl
  * @param height height of framebuffer
  */
 void GPU::createFramebuffer      (uint32_t width,uint32_t height){
-    frameBuffer.colorBuffer.resize((size_t)width * height);
-    frameBuffer.depthBuffer.resize((size_t)width * height);
+    try{
+    frameBuffer.colorBuffer.resize(((size_t)width * height )+ size_t(width));
+    frameBuffer.depthBuffer.resize(((size_t)width * height) + size_t(width));
     frameBuffer.width = width;
     frameBuffer.height = height;
+
+
+
+    float* asd= getFramebufferDepth();
+    int boga =  25;
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 /**
  * @brief This function deletes framebuffer.
  */
 void GPU::deleteFramebuffer      (){
-    frameBuffer.colorBuffer.clear();
+    try{
+   frameBuffer.colorBuffer.clear();
     frameBuffer.colorBuffer.shrink_to_fit();
     frameBuffer.depthBuffer.clear();
     frameBuffer.depthBuffer.shrink_to_fit();
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 
 }
 
@@ -458,10 +611,20 @@ void GPU::deleteFramebuffer      (){
  * @param height new heght of framebuffer
  */
 void     GPU::resizeFramebuffer(uint32_t width,uint32_t height){
-    frameBuffer.depthBuffer.resize((size_t)width * height);
-    frameBuffer.colorBuffer.resize((size_t)width * height);
+    try{
+    frameBuffer.depthBuffer.resize(((size_t)width * height) + size_t(width));
+    frameBuffer.colorBuffer.resize(((size_t)width * height) + size_t(width));
+    
     frameBuffer.width = width;
-    frameBuffer.height = height;}
+    frameBuffer.height = height;
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
+
+
+}
 
 /**
  * @brief This function returns pointer to color buffer.
@@ -469,8 +632,13 @@ void     GPU::resizeFramebuffer(uint32_t width,uint32_t height){
  * @return pointer to color buffer
  */
 uint8_t* GPU::getFramebufferColor  (){
+    try{
     return (uint8_t*)&frameBuffer.colorBuffer[0];
-  
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 /**
@@ -479,7 +647,14 @@ uint8_t* GPU::getFramebufferColor  (){
  * @return pointer to dept buffer.
  */
 float* GPU::getFramebufferDepth    (){
-    return (float*)&frameBuffer.depthBuffer[0];
+    try{
+        float* value = &frameBuffer.depthBuffer[0];
+        return value;
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 /**
@@ -488,7 +663,13 @@ float* GPU::getFramebufferDepth    (){
  * @return width of framebuffer
  */
 uint32_t GPU::getFramebufferWidth (){
+    try{
     return frameBuffer.width;
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 /**
@@ -497,7 +678,13 @@ uint32_t GPU::getFramebufferWidth (){
  * @return height of framebuffer
  */
 uint32_t GPU::getFramebufferHeight(){
+    try{
     return frameBuffer.height;
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 /// @}
@@ -516,21 +703,26 @@ uint32_t GPU::getFramebufferHeight(){
  * @param a alpha channel
  */
 void            GPU::clear(float r, float g, float b, float a) {
-
-    uint8_t red = r >= 1.f ? 255 : (uint8_t)(255.f * r);
-    uint8_t green = g >= 1.f ? 255 : (uint8_t)(255.f * g);
-    uint8_t blue = b >= 1.f ? 255 : (uint8_t)(255.f * b);
-    uint8_t alpha = a >= 1.f ? 255 : (uint8_t)(255.f * a);
-    for (Color &pixel : frameBuffer.colorBuffer)
-    {
-        pixel.r = red;
-        pixel.g = green;
-        pixel.b = blue;
-        pixel.a = alpha;
+    try {
+        uint8_t red = r >= 1.f ? 255 : (uint8_t)(255.f * r);
+        uint8_t green = g >= 1.f ? 255 : (uint8_t)(255.f * g);
+        uint8_t blue = b >= 1.f ? 255 : (uint8_t)(255.f * b);
+        uint8_t alpha = a >= 1.f ? 255 : (uint8_t)(255.f * a);
+        for (Color& pixel : frameBuffer.colorBuffer)
+        {
+            pixel.r = red;
+            pixel.g = green;
+            pixel.b = blue;
+            pixel.a = alpha;
+        }
+        for (float& depth : frameBuffer.depthBuffer)
+        {
+            depth = std::numeric_limits<float>::infinity();
+        }
     }
-    for (float &depth : frameBuffer.depthBuffer)
+    catch (...)
     {
-        depth = std::numeric_limits<float>::infinity();
+        std::cout << "exception 1" << "\n";
     }
 
 }
@@ -543,12 +735,10 @@ void            GPU::drawTriangles         (uint32_t  nofVertices){
   /// Parametr "nofVertices" obsahuje počet vrcholů, který by se měl vykreslit (3 pro jeden trojúhelník).<br>
     //active vertex puller
 
-   
+   try{
     
-
-
-
-    //assemble triangles from buffers data
+    
+ //assemble triangles from buffers data
     if (nofVertices <= 0)
     {
         return;
@@ -564,42 +754,58 @@ void            GPU::drawTriangles         (uint32_t  nofVertices){
     viewportTransAndNormalize(clippedTriangles);
     rasterize(clippedTriangles);
     
+   }
+   catch (...)
+   {
+       std::cout << "exception 1" << "\n";
+   }
 }
+
+
+
+
 
 
 std::vector<GPU::Triangle> GPU::assembleTriangles(uint32_t trianglesCount)
 {
- 
-    std::vector<Triangle> triangles;
-    //used for vertexPuller heads offset / indexing - starts at 0
-    uint32_t vertexShaderInvocations = 0;
-    for (unsigned i = 0; i < (trianglesCount); i++)
-    {
-        Triangle newTriangle;
-        for (unsigned j = 0; j < 3; j++)
+    try {
+
+        std::vector<Triangle> triangles;
+        //used for vertexPuller heads offset / indexing - starts at 0
+        Triangle sad;
+        uint32_t vertexShaderInvocations = 0;
+        for (unsigned i = 0; i < (trianglesCount); i++)
         {
-            newTriangle.triangleVertexes[j] = vertexProcessor(vertexShaderInvocations++);
+            Triangle newTriangle;
+            for (unsigned j = 0; j < 3; j++)
+            {
+                newTriangle.triangleVertexes[j] = vertexProcessor(vertexShaderInvocations++);
+            }
+
+            triangles.push_back(newTriangle);
         }
-       
-        triangles.push_back(newTriangle);
+        return triangles;
     }
-    return triangles;
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 OutVertex GPU::vertexProcessor(uint32_t vertexNumber)
 {
-
+    try{
     InVertex vertexToProcess = vertexPullerRead(vertexNumber);
-    
+
     OutVertex processedVertex;
     for (uint8_t i = 0; i < 3; i++)
     {
         processedVertex.gl_Position[i] = std::numeric_limits<float>::infinity() * -1.f;
     }
     processedVertex.gl_Position.w = 1;
-    
+
 
     //program with activeProgramID doesnt exist
-    if (!isProgram(activeProgramID) || vertexToProcess.gl_VertexID == emptyID )
+    if (!isProgram(activeProgramID) || vertexToProcess.gl_VertexID == emptyID)
     {
         return processedVertex;
     }
@@ -607,17 +813,20 @@ OutVertex GPU::vertexProcessor(uint32_t vertexNumber)
     ShaderProgram* activeProgram = programs.find(activeProgramID)->second;
     if (activeProgram->vertexShader == NULL)
     {
-        processedVertex.gl_Position[0] = NULL;
         return processedVertex;
     }
     //call assigned vertexShader function
     activeProgram->vertexShader(processedVertex, vertexToProcess, activeProgram->uniforms);
     return processedVertex;
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 InVertex GPU::vertexPullerRead(uint32_t vertexNumber)
 {
-//\todo add error handling
-   
+    try{
     InVertex vertex;
     vertex.gl_VertexID = emptyID;
     //no active vp
@@ -641,14 +850,20 @@ InVertex GPU::vertexPullerRead(uint32_t vertexNumber)
             BufferID bufID = activeVP->heads.at(i).ID;
             uint64_t offset = activeVP->heads.at(i).offset + activeVP->heads.at(i).stride * vertex.gl_VertexID;
             uint64_t size = sizeof(float) * (uint64_t)activeVP->heads.at(i).attrType;
-            void* destination= &vertex.attributes[i];
+            void* destination = &vertex.attributes[i];
             getBufferData(bufID, offset, size, destination);
         }
     }
     return vertex;
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 std::vector<GPU::Triangle> GPU::clipTriangles(std::vector<GPU::Triangle> triangles)
 {
+    try{
     uint64_t trianglesCount = triangles.size();
     std::vector<GPU::Triangle> clippedTriangles;
     for (auto triangle : triangles)
@@ -746,14 +961,25 @@ std::vector<GPU::Triangle> GPU::clipTriangles(std::vector<GPU::Triangle> triangl
         vertexesOutCount = 0;
     }
     return clippedTriangles;
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 bool GPU::inViewSpace(OutVertex vertex)
 {
+    try{
     return ((vertex.gl_Position.w * -1) <= vertex.gl_Position.z);
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 OutVertex GPU::cutEdge(OutVertex vertexInside, OutVertex vertexOutside)
 {
-
+    try{
     OutVertex newVertex;
     //parameter t for edge parametric equation
     float t = ((float)(-1 * vertexInside.gl_Position.w - vertexInside.gl_Position.z)) / (vertexOutside.gl_Position.w - vertexInside.gl_Position.w + vertexOutside.gl_Position.z - vertexInside.gl_Position.z);
@@ -769,9 +995,15 @@ OutVertex GPU::cutEdge(OutVertex vertexInside, OutVertex vertexOutside)
         attribute.v4 = (t * vertexOutside.attributes->v4) + ((1 - t) * vertexInside.attributes->v4);
     }
     return newVertex;
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 void GPU::viewportTransAndNormalize(std::vector<GPU::Triangle>& triangles)
 {
+    try{
     for (auto& triangle : triangles)
     {
         for (auto& vertex : triangle.triangleVertexes)
@@ -787,23 +1019,42 @@ void GPU::viewportTransAndNormalize(std::vector<GPU::Triangle>& triangles)
             vertex.gl_Position.y *= (float)getFramebufferHeight() / 2.0f;
         }
     }
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 OutFragment GPU::fragmentProcessor(InFragment fragment)
-{
+{try{
     ShaderProgram* program = programs.find(activeProgramID)->second;
     OutFragment output;
     program->fragmentShader(output, fragment, program->uniforms);
     return output;
 }
+catch (...)
+{
+    std::cout << "exception 1" << "\n";
+}
+}
 
 bool GPU::depthTest(uint32_t x, uint32_t y, float depth)
 {
+    try{
     float* p_depthBuffer = getFramebufferDepth();
+    int width = getFramebufferWidth();
+    int height = getFramebufferHeight();
     return depth < p_depthBuffer[getFramebufferWidth() * y + x];
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 void GPU::perFragment(uint32_t x, uint32_t y, float depth, OutFragment color)
 {
+    try{
     if (depthTest(x, y, depth))
     {
         float* p_depthBuffer = getFramebufferDepth();
@@ -817,11 +1068,16 @@ void GPU::perFragment(uint32_t x, uint32_t y, float depth, OutFragment color)
             p_colorBuffer[(y * getFramebufferWidth() + x) * 4 +  i] = (color.gl_FragColor[i] >= 1.f) ? 255 : (uint8_t)((color.gl_FragColor[i]) * 255.f);
         }  
     }
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 InFragment GPU::assembleInFragment(uint64_t x, uint64_t y, GPU::Triangle triangle)
 {
-
+    try{
     std::array<std::array<float, 2>, 3> triangleVertexesCoords =
     {
         triangle.triangleVertexes[0].gl_Position.x, triangle.triangleVertexes[0].gl_Position.y,
@@ -872,10 +1128,15 @@ InFragment GPU::assembleInFragment(uint64_t x, uint64_t y, GPU::Triangle triangl
     }
     fragment.gl_FragCoord.w = 1;
     return fragment;
-    
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 float GPU::triangleArea(std::array<std::array<float,2>, 3> edgeVectors)
 {
+    try{
     std::array<float, 3> edgeLengths;
     for (size_t i = 0; i < edgeVectors.size(); i++)
     {
@@ -885,10 +1146,16 @@ float GPU::triangleArea(std::array<std::array<float,2>, 3> edgeVectors)
     }
     float s = (edgeLengths[0] + edgeLengths[1] + edgeLengths[2]) / 2.f;
     return std::sqrt(s * (s - edgeLengths[0]) * (s - edgeLengths[1]) * (s - edgeLengths[2]));
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
+    }
 }
 
 void GPU::rasterize(std::vector<GPU::Triangle> triangles)
 {
+    try{
     for (auto triangle : triangles)
     {
         //area for pixel iteration
@@ -912,9 +1179,9 @@ void GPU::rasterize(std::vector<GPU::Triangle> triangles)
         float b2 = triangle.triangleVertexes[2].gl_Position.x - triangle.triangleVertexes[1].gl_Position.x;
         float b3 = triangle.triangleVertexes[0].gl_Position.x - triangle.triangleVertexes[2].gl_Position.x;
         //c for general line equation
-        float c1 = -1.f * (a1 * triangle.triangleVertexes[0].gl_Position.x + b1 * triangle.triangleVertexes[0].gl_Position.y);
-        float c2 = -1.f * (a2 * triangle.triangleVertexes[1].gl_Position.x + b2 * triangle.triangleVertexes[1].gl_Position.y);
-        float c3 = -1.f * (a3 * triangle.triangleVertexes[2].gl_Position.x + b3 * triangle.triangleVertexes[2].gl_Position.y);
+        int c1 = (int)(-1.f * (a1 * triangle.triangleVertexes[0].gl_Position.x + b1 * triangle.triangleVertexes[0].gl_Position.y));
+        int c2 = (int)(-1.f * (a2 * triangle.triangleVertexes[1].gl_Position.x + b2 * triangle.triangleVertexes[1].gl_Position.y));
+        int c3 = (int)(-1.f * (a3 * triangle.triangleVertexes[2].gl_Position.x + b3 * triangle.triangleVertexes[2].gl_Position.y));
 
         float edge1_prime = a1 * (minX + 0.5f) + b1 * (minY + 0.5f) + c1;
         float edge2_prime = a2 * (minX + 0.5f) + b2 * (minY + 0.5f) + c2;
@@ -946,6 +1213,11 @@ void GPU::rasterize(std::vector<GPU::Triangle> triangles)
             edge2_prime += b2;
             edge3_prime += b3;
         }
+    }
+    }
+    catch (...)
+    {
+        std::cout << "exception 1" << "\n";
     }
 }
 

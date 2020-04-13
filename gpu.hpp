@@ -109,7 +109,7 @@ private:
         std::array<AttributeType, maxAttributes> attributes{ AttributeType::EMPTY };
     };
     std::map<ProgramID, ShaderProgram*> programs;
-    ProgramID activeProgramID = NULL;
+    ProgramID activeProgramID = 0;
 
     struct Color
     {
@@ -153,11 +153,11 @@ private:
     //tests if pixel should be replaced - depth is lower than current pixel's depth
     bool depthTest(uint32_t x, uint32_t y, float depth);
     //overwrites values in framebuffer if depthtest == true
-    void GPU::perFragment(uint32_t x, uint32_t y, float depth, OutFragment color);
+    void perFragment(uint32_t x, uint32_t y, float depth, OutFragment color);
     //returns assembled InFragment structure with normalized coordinates and interpolated attributes and depth
-    InFragment GPU::assembleInFragment(uint64_t x, uint64_t y, GPU::Triangle triangle);
+    InFragment assembleInFragment(uint64_t x, uint64_t y, Triangle triangle);
     //computes array of triangle from 3 vertexes with x and y float coords
-    float GPU::triangleArea(std::array<std::array<float, 2>, 3> edgeVectors);
+    float triangleArea(std::array<std::array<float, 2>, 3> edgeVectors);
 };
 
 

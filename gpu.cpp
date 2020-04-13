@@ -6,7 +6,7 @@
  */
 
 #include <student/gpu.hpp>
-
+#include<algorithm>
 
 
 /// \addtogroup gpu_init
@@ -24,6 +24,19 @@ GPU::GPU(){
  * @brief Destructor of GPU
  */
 GPU::~GPU(){
+    for (auto program : programs)
+    {
+        deleteProgram(program.first);
+    }
+    for (auto puller : vertexPullers)
+    {
+        deleteVertexPuller(puller.first);
+        unbindVertexPuller();
+    }
+    for (auto buffer : buffers)
+    {
+        deleteBuffer(buffer.first);
+    }
 }
 
 /// @}
@@ -554,16 +567,11 @@ void            GPU::drawTriangles         (uint32_t  nofVertices){
 }
 
 
-
-
-
-
 std::vector<GPU::Triangle> GPU::assembleTriangles(uint32_t trianglesCount)
 {
  
     std::vector<Triangle> triangles;
     //used for vertexPuller heads offset / indexing - starts at 0
-    Triangle sad;
     uint32_t vertexShaderInvocations = 0;
     for (unsigned i = 0; i < (trianglesCount); i++)
     {
@@ -581,6 +589,7 @@ OutVertex GPU::vertexProcessor(uint32_t vertexNumber)
 {
 
     InVertex vertexToProcess = vertexPullerRead(vertexNumber);
+    
     OutVertex processedVertex;
     for (uint8_t i = 0; i < 3; i++)
     {
@@ -590,9 +599,8 @@ OutVertex GPU::vertexProcessor(uint32_t vertexNumber)
     
 
     //program with activeProgramID doesnt exist
-    if (!isProgram(activeProgramID))
+    if (!isProgram(activeProgramID) || vertexToProcess.gl_VertexID == emptyID )
     {
-        processedVertex.gl_Position[0] = NULL;
         return processedVertex;
     }
     //get active progoram pointer from ID
@@ -609,13 +617,18 @@ OutVertex GPU::vertexProcessor(uint32_t vertexNumber)
 InVertex GPU::vertexPullerRead(uint32_t vertexNumber)
 {
 //\todo add error handling
-    VertexPuller* activeVP= vertexPullers.find(activeVertexPullerID)->second;
+   
     InVertex vertex;
-    if (activeVP->indexing.bufferID != NULL)
+    vertex.gl_VertexID = emptyID;
+    //no active vp
+    if (!isVertexPuller(activeVertexPullerID))
+        return vertex;
+    VertexPuller* activeVP = vertexPullers.find(activeVertexPullerID)->second;
+    if (activeVP->indexing.bufferID != 0)
     {
         uint32_t indexSize = (uint8_t)(activeVP->indexing.indexType);
         vertex.gl_VertexID = 0;
-        getBufferData(activeVP->indexing.bufferID, vertexNumber * indexSize, indexSize, &vertex.gl_VertexID);
+        getBufferData(activeVP->indexing.bufferID, (uint32_t)(vertexNumber * indexSize), indexSize, &vertex.gl_VertexID);
     }
     else
     {

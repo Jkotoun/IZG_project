@@ -25,6 +25,21 @@ GPU::GPU(){
  */
 GPU::~GPU(){  
     
+    for (auto buffer : buffers)
+    {
+        deleteBuffer(buffer.first);
+    }
+    for (auto VP: vertexPullers)
+    {
+        deleteVertexPuller(VP.first);
+    }
+    for (auto prg : programs)
+    {
+        deleteProgram(prg.first);
+    }
+    deleteFramebuffer();
+
+
 }
 
 /// @}

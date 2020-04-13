@@ -69,8 +69,6 @@ class GPU{
     /// @}
 private:
    
- 
-
     //buffer
     struct Buffer
     {
@@ -83,10 +81,10 @@ private:
     //vertexPuller
     struct Head
     {
-        BufferID ID;
-        uint64_t offset;
-        uint64_t stride;
-        AttributeType attrType;
+        BufferID ID = NULL;
+        uint64_t offset = 0;
+        uint64_t stride = 0;
+        AttributeType attrType = AttributeType::EMPTY;
         bool enabled = false;
     };
     struct Indexing
@@ -134,11 +132,11 @@ private:
     };
 
     //returns vector of triangle structures - assembled 3 vertexes
-    std::vector<GPU::Triangle> GPU::assemblyTriangles(uint64_t trianglesCount);
+    std::vector<Triangle> assembleTriangles(uint32_t trianglesCount);
     //makes OutVertex from InVertex by execution of vertexShader
-    OutVertex vertexProcessor(uint64_t vertexNumber);
+    OutVertex vertexProcessor(uint32_t vertexNumber);
     //assembles invertex from buffers
-    InVertex vertexPullerRead(uint64_t vertexNumber);
+    InVertex vertexPullerRead(uint32_t vertexNumber);
     //clips all triangles from given vector
     //vector might contain more triangles than before execution (cause by clipping only 1 vertex in triangle)
     std::vector<Triangle> clipTriangles(std::vector<Triangle> triangles);
@@ -156,6 +154,10 @@ private:
     bool depthTest(uint32_t x, uint32_t y, float depth);
     //overwrites values in framebuffer if depthtest == true
     void GPU::perFragment(uint32_t x, uint32_t y, float depth, OutFragment color);
+    //returns assembled InFragment structure with normalized coordinates and interpolated attributes and depth
+    InFragment GPU::assembleInFragment(uint64_t x, uint64_t y, GPU::Triangle triangle);
+    //computes array of triangle from 3 vertexes with x and y float coords
+    float GPU::triangleArea(std::array<std::array<float, 2>, 3> edgeVectors);
 };
 
 

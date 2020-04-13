@@ -24,7 +24,6 @@ GPU::GPU(){
  * @brief Destructor of GPU
  */
 GPU::~GPU(){
-
 }
 
 /// @}
@@ -422,8 +421,8 @@ void             GPU::programUniformMatrix4f(ProgramID prg,uint32_t uniformId,gl
  * @param height height of framebuffer
  */
 void GPU::createFramebuffer      (uint32_t width,uint32_t height){
-    frameBuffer.colorBuffer.resize(width * height);
-    frameBuffer.depthBuffer.resize(width * height);
+    frameBuffer.colorBuffer.resize((size_t)width * height);
+    frameBuffer.depthBuffer.resize((size_t)width * height);
     frameBuffer.width = width;
     frameBuffer.height = height;
 }
@@ -446,8 +445,8 @@ void GPU::deleteFramebuffer      (){
  * @param height new heght of framebuffer
  */
 void     GPU::resizeFramebuffer(uint32_t width,uint32_t height){
-    frameBuffer.depthBuffer.resize(width * height);
-    frameBuffer.colorBuffer.resize(width * height);
+    frameBuffer.depthBuffer.resize((size_t)width * height);
+    frameBuffer.colorBuffer.resize((size_t)width * height);
     frameBuffer.width = width;
     frameBuffer.height = height;}
 
@@ -504,14 +503,19 @@ uint32_t GPU::getFramebufferHeight(){
  * @param a alpha channel
  */
 void            GPU::clear(float r, float g, float b, float a) {
-    for (Color pixel : frameBuffer.colorBuffer)
+
+    uint8_t red = r >= 1.f ? 255 : (uint8_t)(255.f * r);
+    uint8_t green = g >= 1.f ? 255 : (uint8_t)(255.f * g);
+    uint8_t blue = b >= 1.f ? 255 : (uint8_t)(255.f * b);
+    uint8_t alpha = a >= 1.f ? 255 : (uint8_t)(255.f * a);
+    for (Color &pixel : frameBuffer.colorBuffer)
     {
-        pixel.r = r > 1 ? 255 : 255 * r;
-        pixel.g = r > 1 ? 255 : 255 * g;
-        pixel.b = r > 1 ? 255 : 255 * b;
-        pixel.a = r > 1 ? 255 : 255 * a;
+        pixel.r = red;
+        pixel.g = green;
+        pixel.b = blue;
+        pixel.a = alpha;
     }
-    for (float depth : frameBuffer.depthBuffer)
+    for (float &depth : frameBuffer.depthBuffer)
     {
         depth = std::numeric_limits<float>::infinity();
     }
@@ -526,14 +530,18 @@ void            GPU::drawTriangles         (uint32_t  nofVertices){
   /// Parametr "nofVertices" obsahuje počet vrcholů, který by se měl vykreslit (3 pro jeden trojúhelník).<br>
     //active vertex puller
 
+   
+    
+
+
 
     //assemble triangles from buffers data
-    std::vector<Triangle>assembledTriangles = assemblyTriangles(nofVertices / 3);
+    std::vector<Triangle>assembledTriangles = assembleTriangles(nofVertices / 3);
     //clip triangles
     std::vector<Triangle>clippedTriangles = clipTriangles(assembledTriangles);
     //normalize coords and transform to viewport 
     viewportTransAndNormalize(clippedTriangles);
-   
+    rasterize(clippedTriangles);
     
     
 }
@@ -543,17 +551,17 @@ void            GPU::drawTriangles         (uint32_t  nofVertices){
 
 
 
-std::vector<GPU::Triangle> GPU::assemblyTriangles(uint64_t trianglesCount)
+std::vector<GPU::Triangle> GPU::assembleTriangles(uint32_t trianglesCount)
 {
  
     std::vector<Triangle> triangles;
     //used for vertexPuller heads offset / indexing - starts at 0
     Triangle sad;
-    uint64_t vertexShaderInvocations = 0;
-    for (size_t i = 0; i < (trianglesCount); i++)
+    uint32_t vertexShaderInvocations = 0;
+    for (unsigned i = 0; i < (trianglesCount); i++)
     {
         Triangle newTriangle;
-        for (size_t j = 0; j < 3; j++)
+        for (unsigned j = 0; j < 3; j++)
         {
             newTriangle.triangleVertexes[j] = vertexProcessor(vertexShaderInvocations++);
         }
@@ -562,7 +570,7 @@ std::vector<GPU::Triangle> GPU::assemblyTriangles(uint64_t trianglesCount)
     }
     return triangles;
 }
-OutVertex GPU::vertexProcessor(uint64_t vertexNumber)
+OutVertex GPU::vertexProcessor(uint32_t vertexNumber)
 {
 
     InVertex vertexToProcess = vertexPullerRead(vertexNumber);
@@ -584,14 +592,14 @@ OutVertex GPU::vertexProcessor(uint64_t vertexNumber)
     activeProgram->vertexShader(processedVertex, vertexToProcess, activeProgram->uniforms);
     return processedVertex;
 }
-InVertex GPU::vertexPullerRead(uint64_t vertexNumber)
+InVertex GPU::vertexPullerRead(uint32_t vertexNumber)
 {
 //\todo add error handling
     VertexPuller* activeVP= vertexPullers.find(activeVertexPullerID)->second;
     InVertex vertex;
     if (activeVP->indexing.bufferID != NULL)
     {
-        uint64_t indexSize = (uint8_t)(activeVP->indexing.indexType);
+        uint32_t indexSize = (uint8_t)(activeVP->indexing.indexType);
         vertex.gl_VertexID = 0;
         getBufferData(activeVP->indexing.bufferID, vertexNumber * indexSize, indexSize, &vertex.gl_VertexID);
     }
@@ -639,31 +647,36 @@ std::vector<GPU::Triangle> GPU::clipTriangles(std::vector<GPU::Triangle> triangl
             if (!inViewSpace(triangle.triangleVertexes[0]))
             {
                 //index 0 out
-                newTriangle1.triangleVertexes[1] = newTriangle2.triangleVertexes[1] = triangle.triangleVertexes[1];
-                newTriangle1.triangleVertexes[2] = newTriangle2.triangleVertexes[2] = triangle.triangleVertexes[2];
-
-                newTriangle1.triangleVertexes[0] = cutEdge(triangle.triangleVertexes[1], triangle.triangleVertexes[0]);
-                newTriangle2.triangleVertexes[0] = cutEdge(triangle.triangleVertexes[2], triangle.triangleVertexes[0]);
-
+                
+                //newTriangle1.triangleVertexes[1] = newTriangle2.triangleVertexes[1] = triangle.triangleVertexes[1];
+                newTriangle1.triangleVertexes[1] = newTriangle2.triangleVertexes[2] = triangle.triangleVertexes[2];
+                newTriangle1.triangleVertexes[2] = newTriangle2.triangleVertexes[1] =  cutEdge(triangle.triangleVertexes[0], triangle.triangleVertexes[1]);
+                
+                newTriangle2.triangleVertexes[0] = triangle.triangleVertexes[1];
+                newTriangle1.triangleVertexes[0] =cutEdge(triangle.triangleVertexes[0], triangle.triangleVertexes[2]);
             }
             else if (!inViewSpace(triangle.triangleVertexes[1]))
             {
                 //out index 1
-                newTriangle1.triangleVertexes[0] = newTriangle2.triangleVertexes[0] = triangle.triangleVertexes[0];
-                newTriangle1.triangleVertexes[2] = newTriangle2.triangleVertexes[2] = triangle.triangleVertexes[2];
+                newTriangle1.triangleVertexes[1] = newTriangle2.triangleVertexes[2] = triangle.triangleVertexes[2];
+                newTriangle1.triangleVertexes[2] = newTriangle2.triangleVertexes[1] = cutEdge(triangle.triangleVertexes[0], triangle.triangleVertexes[1]);
 
-                newTriangle1.triangleVertexes[1] = cutEdge(triangle.triangleVertexes[0], triangle.triangleVertexes[1]);
-                newTriangle2.triangleVertexes[1] = cutEdge(triangle.triangleVertexes[2], triangle.triangleVertexes[1]);
+                
+                newTriangle2.triangleVertexes[0] = triangle.triangleVertexes[0];
+                newTriangle1.triangleVertexes[0] = cutEdge(triangle.triangleVertexes[1], triangle.triangleVertexes[2]);
             }
-            else
+            else if(!inViewSpace(triangle.triangleVertexes[2]))
             {
                 //out index 2
-                newTriangle1.triangleVertexes[0] = newTriangle2.triangleVertexes[0] = triangle.triangleVertexes[0];
-                newTriangle1.triangleVertexes[1] = newTriangle2.triangleVertexes[1] = triangle.triangleVertexes[1];
+                newTriangle1.triangleVertexes[1] = newTriangle2.triangleVertexes[2] = triangle.triangleVertexes[1];
+                newTriangle1.triangleVertexes[2] = newTriangle2.triangleVertexes[1] = cutEdge(triangle.triangleVertexes[0], triangle.triangleVertexes[2]);
 
-                newTriangle1.triangleVertexes[2] = cutEdge(triangle.triangleVertexes[0], triangle.triangleVertexes[2]);
-                newTriangle2.triangleVertexes[2] = cutEdge(triangle.triangleVertexes[1], triangle.triangleVertexes[2]);
+
+                newTriangle1.triangleVertexes[0] = triangle.triangleVertexes[0];
+                newTriangle2.triangleVertexes[0] = cutEdge(triangle.triangleVertexes[1], triangle.triangleVertexes[2]);
             }
+          
+
             clippedTriangles.push_back(newTriangle1);
             clippedTriangles.push_back(newTriangle2);
         }
@@ -683,6 +696,8 @@ std::vector<GPU::Triangle> GPU::clipTriangles(std::vector<GPU::Triangle> triangl
             {
                 //index 0 and 2 out
                 newTriangle.triangleVertexes[1] = triangle.triangleVertexes[1];
+
+
                 newTriangle.triangleVertexes[0] = cutEdge(triangle.triangleVertexes[1], triangle.triangleVertexes[0]);
                 newTriangle.triangleVertexes[2] = cutEdge(triangle.triangleVertexes[1], triangle.triangleVertexes[2]);
             }
@@ -690,6 +705,8 @@ std::vector<GPU::Triangle> GPU::clipTriangles(std::vector<GPU::Triangle> triangl
             {
                 //index 0 and 1 out
                 newTriangle.triangleVertexes[2] = triangle.triangleVertexes[2];
+
+
                 newTriangle.triangleVertexes[0] = cutEdge(triangle.triangleVertexes[2], triangle.triangleVertexes[0]);
                 newTriangle.triangleVertexes[1] = cutEdge(triangle.triangleVertexes[2], triangle.triangleVertexes[1]);
 
@@ -714,7 +731,7 @@ OutVertex GPU::cutEdge(OutVertex vertexInside, OutVertex vertexOutside)
     //parameter t for edge parametric equation
     float t = ((float)(-1 * vertexInside.gl_Position.w - vertexInside.gl_Position.z)) / (vertexOutside.gl_Position.w - vertexInside.gl_Position.w + vertexOutside.gl_Position.z - vertexInside.gl_Position.z);
     //linear interpolation of x,y,z,w coords
-    for (size_t i = 0; i < 4; i++)
+    for (uint8_t i = 0; i < 4; i++)
     {
         newVertex.gl_Position[i] = vertexInside.gl_Position[i] + t * (vertexOutside.gl_Position[i] - vertexInside.gl_Position[i]);
     }
@@ -732,7 +749,7 @@ void GPU::viewportTransAndNormalize(std::vector<GPU::Triangle>& triangles)
     {
         for (auto& vertex : triangle.triangleVertexes)
         {
-            for (size_t i = 0; i < 3; i++)
+            for (uint8_t i = 0; i < 3; i++)
             {
                 vertex.gl_Position[i] = vertex.gl_Position[i] / vertex.gl_Position[3];
 
@@ -765,48 +782,148 @@ void GPU::perFragment(uint32_t x, uint32_t y, float depth, OutFragment color)
         float* p_depthBuffer = getFramebufferDepth();
         uint8_t* p_colorBuffer = getFramebufferColor();
         //overwrite depth
-        p_depthBuffer[0] = depth;
+        p_depthBuffer[y * getFramebufferWidth() + x] = depth;
         //overwrite each color part (RGBA) and normalize to <0,1> range
-        for (size_t i = 0; i < 4; i++)
+        for (uint32_t i = 0; i < 4; i++)
         {
-            p_colorBuffer[i] = (color.gl_FragColor[i] > 255) ? 1.0f : ((float)color.gl_FragColor[i] / 255);
+
+            p_colorBuffer[(y * getFramebufferWidth() + x) * 4 +  i] = (color.gl_FragColor[i] >= 1.f) ? 255 : (uint8_t)((color.gl_FragColor[i]) * 255.f);
         }  
     }
 }
 
+InFragment GPU::assembleInFragment(uint64_t x, uint64_t y, GPU::Triangle triangle)
+{
+
+    std::array<std::array<float, 2>, 3> triangleVertexesCoords =
+    {
+        triangle.triangleVertexes[0].gl_Position.x, triangle.triangleVertexes[0].gl_Position.y,
+        triangle.triangleVertexes[1].gl_Position.x, triangle.triangleVertexes[1].gl_Position.y,
+        triangle.triangleVertexes[2].gl_Position.x, triangle.triangleVertexes[2].gl_Position.y
+    };
+    float mainTriangleArea = triangleArea(triangleVertexesCoords);
+    //lambda 0
+    float midPixelX = (float)x + 0.5f;
+    float midPixelY = (float)y + 0.5f;
+    triangleVertexesCoords[0] = { midPixelX, midPixelY};
+    float lambda0 = triangleArea(triangleVertexesCoords) / mainTriangleArea;
+    //lambda 1
+    triangleVertexesCoords[1] = { triangle.triangleVertexes[0].gl_Position.x, triangle.triangleVertexes[0].gl_Position.y };
+    float lambda1 = triangleArea(triangleVertexesCoords) / mainTriangleArea;
+    //lambda 2
+    triangleVertexesCoords[2] = { triangle.triangleVertexes[1].gl_Position.x, triangle.triangleVertexes[1].gl_Position.y };
+    float lambda2 = triangleArea(triangleVertexesCoords) / mainTriangleArea;
+
+
+
+
+
+    std::array<float, 3> lambdas = { lambda0, lambda1, lambda2 };
+    std::array<glm::vec4, 3> triangleCoords = { triangle.triangleVertexes[0].gl_Position,triangle.triangleVertexes[1].gl_Position, triangle.triangleVertexes[2].gl_Position };
+
+    float depth = (((triangleCoords[0].z * lambdas[0]) / triangleCoords[0].w) + ((triangleCoords[1].z * lambdas[1]) / triangleCoords[1].w) + ((triangleCoords[2].z * lambdas[2]) / triangleCoords[2].w))
+        / ((lambdas[0] / triangleCoords[0].w) + (lambdas[1] / triangleCoords[1].w) + (lambdas[2] / triangleCoords[2].w));
+    
+    InFragment fragment;
+    fragment.gl_FragCoord.x = midPixelX;
+        fragment.gl_FragCoord.y = midPixelY;
+
+    fragment.gl_FragCoord.z = depth;
+    ShaderProgram* program = programs.find(activeProgramID)->second;
+   
+    for (uint8_t i = 0; i < maxAttributes; i++)
+    {
+        std::array<glm::vec4, 3> attributes = { triangle.triangleVertexes[0].attributes[i].v4, triangle.triangleVertexes[1].attributes[i].v4, triangle.triangleVertexes[2].attributes[i].v4 };
+        if (program->attributes[i] != AttributeType::EMPTY)
+        {
+            for (uint8_t j = 0; j < (uint8_t)program->attributes[i]; j++)
+            { 
+                fragment.attributes[i].v4[j] = (((attributes[0][j]* lambdas[0]) / triangleCoords[0].w) + ((attributes[1][j] * lambdas[1]) / triangleCoords[1].w) + ((attributes[2][j] * lambdas[2]) / triangleCoords[2].w))
+                    / ((lambdas[0] / triangleCoords[0].w) + (lambdas[1] / triangleCoords[1].w) + (lambdas[2] / triangleCoords[2].w));
+            }
+        }
+    }
+    fragment.gl_FragCoord.w = 1;
+    return fragment;
+    
+}
+float GPU::triangleArea(std::array<std::array<float,2>, 3> edgeVectors)
+{
+    std::array<float, 3> edgeLengths;
+    for (size_t i = 0; i < edgeVectors.size(); i++)
+    {
+        float xDifference = edgeVectors[i][0] - edgeVectors[(i + 1) % 3][0];
+        float yDifference = edgeVectors[i][1] - edgeVectors[(i + 1) % 3][1];
+        edgeLengths[i] = glm::length(glm::vec2(xDifference,yDifference));
+    }
+    float s = (edgeLengths[0] + edgeLengths[1] + edgeLengths[2]) / 2.f;
+    return std::sqrt(s * (s - edgeLengths[0]) * (s - edgeLengths[1]) * (s - edgeLengths[2]));
+}
 
 void GPU::rasterize(std::vector<GPU::Triangle> triangles)
 {
     for (auto triangle : triangles)
     {
         //area for pixel iteration
-        int maxX = std::max({ triangle.triangleVertexes[0].gl_Position.x, triangle.triangleVertexes[1].gl_Position.x , triangle.triangleVertexes[2].gl_Position.x });
-        int minX = std::min({ triangle.triangleVertexes[0].gl_Position.x, triangle.triangleVertexes[1].gl_Position.x , triangle.triangleVertexes[2].gl_Position.x });
-        int maxY = std::max({ triangle.triangleVertexes[0].gl_Position.y, triangle.triangleVertexes[1].gl_Position.y , triangle.triangleVertexes[2].gl_Position.y });
-        int minY = std::min({ triangle.triangleVertexes[0].gl_Position.y, triangle.triangleVertexes[1].gl_Position.y , triangle.triangleVertexes[2].gl_Position.y });
-        //clip by framBuffer resolution
-        int minX = std::max(0, minX);
-        int maxX = std::min((int)getFramebufferWidth(), maxX);
-        int minY = std::max(0, minY);
-        int maxY = std::min((int)getFramebufferHeight(), maxY);
+        float maxX_float = (std::max({ triangle.triangleVertexes[0].gl_Position.x, triangle.triangleVertexes[1].gl_Position.x , triangle.triangleVertexes[2].gl_Position.x }));
+        float minX_float = (std::min({ triangle.triangleVertexes[0].gl_Position.x, triangle.triangleVertexes[1].gl_Position.x , triangle.triangleVertexes[2].gl_Position.x }));
+        float maxY_float = (std::max({ triangle.triangleVertexes[0].gl_Position.y, triangle.triangleVertexes[1].gl_Position.y , triangle.triangleVertexes[2].gl_Position.y }));
+        float minY_float = (std::min({ triangle.triangleVertexes[0].gl_Position.y, triangle.triangleVertexes[1].gl_Position.y , triangle.triangleVertexes[2].gl_Position.y }));
+
+
+
         
+
+
+        //clip by framBuffer resolution
+        int minX = (int)std::max(0.f, minX_float);
+        int maxX = (int)std::min((float)getFramebufferWidth(), maxX_float);
+        int minY = (int)std::max(0.f,  minY_float);
+        int maxY = (int)std::min((float)getFramebufferHeight(), maxY_float);
+    
         //a and b parametes of normal vector for general line equation
-        int a1 = triangle.triangleVertexes[0].gl_Position.y - triangle.triangleVertexes[1].gl_Position.y;
-        int a2 = triangle.triangleVertexes[1].gl_Position.y - triangle.triangleVertexes[2].gl_Position.y;
-        int a3 = triangle.triangleVertexes[2].gl_Position.y - triangle.triangleVertexes[0].gl_Position.y;
-       
-        int b1 = triangle.triangleVertexes[1].gl_Position.x - triangle.triangleVertexes[0].gl_Position.x;
-        int b2 = triangle.triangleVertexes[2].gl_Position.x - triangle.triangleVertexes[1].gl_Position.x;
-        int b3 = triangle.triangleVertexes[0].gl_Position.x - triangle.triangleVertexes[2].gl_Position.x;
+        float a1 = triangle.triangleVertexes[0].gl_Position.y - triangle.triangleVertexes[1].gl_Position.y;
+        float a2 = triangle.triangleVertexes[1].gl_Position.y - triangle.triangleVertexes[2].gl_Position.y;
+        float a3 = triangle.triangleVertexes[2].gl_Position.y - triangle.triangleVertexes[0].gl_Position.y;
+        
+        float b1 = triangle.triangleVertexes[1].gl_Position.x - triangle.triangleVertexes[0].gl_Position.x;
+        float b2 = triangle.triangleVertexes[2].gl_Position.x - triangle.triangleVertexes[1].gl_Position.x;
+        float b3 = triangle.triangleVertexes[0].gl_Position.x - triangle.triangleVertexes[2].gl_Position.x;
         //c for general line equation
-        int c1 = -1 * (a1 * v1.x + b1 * v1.y);
-        int c2 = -1 * (a2 * v2.x + b2 * v2.y);
-        int c3 = -1 * (a3 * v3.x + b3 * v3.y);
+        int c1 = (int)(-1.f * (a1 * triangle.triangleVertexes[0].gl_Position.x + b1 * triangle.triangleVertexes[0].gl_Position.y));
+        int c2 = (int)(-1.f * (a2 * triangle.triangleVertexes[1].gl_Position.x + b2 * triangle.triangleVertexes[1].gl_Position.y));
+        int c3 = (int)(-1 * (a3 * triangle.triangleVertexes[2].gl_Position.x + b3 * triangle.triangleVertexes[2].gl_Position.y));
+
+        float edge1_prime = a1 * (minX + 0.5f) + b1 * (minY + 0.5f) + c1;
+        float edge2_prime = a2 * (minX + 0.5f) + b2 * (minY + 0.5f) + c2;
+        float edge3_prime = a3 * (minX + 0.5f) + b3 * (minY + 0.5f) + c3;
+        float edge1_edited, edge2_edited, edge3_edited;
 
 
 
+        for (int y = minY ; y <= maxY; y++)
+        {
+            edge1_edited = edge1_prime;
+            edge2_edited = edge2_prime;
+            edge3_edited = edge3_prime;
 
+            for (int x = minX; x <= maxX; x++)
+            {
+                if (edge1_edited >=0 && edge2_edited >= 0 && edge3_edited >= 0)
+                {
 
+                    InFragment fragment = assembleInFragment(x,y,triangle);
+                    OutFragment color = fragmentProcessor(fragment);
+                    perFragment(x, y, fragment.gl_FragCoord.z, color);
+                }
+                edge1_edited += a1;
+                edge2_edited += a2;
+                edge3_edited += a3;
+            }
+            edge1_prime += b1;
+            edge2_prime += b2;
+            edge3_prime += b3;
+        }
     }
 }
 

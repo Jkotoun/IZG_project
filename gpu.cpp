@@ -536,13 +536,20 @@ void            GPU::drawTriangles         (uint32_t  nofVertices){
 
 
     //assemble triangles from buffers data
+    if (nofVertices <= 0)
+    {
+        return;
+    }
     std::vector<Triangle>assembledTriangles = assembleTriangles(nofVertices / 3);
     //clip triangles
+    if (assembledTriangles.size() <= 0)
+        return;
     std::vector<Triangle>clippedTriangles = clipTriangles(assembledTriangles);
     //normalize coords and transform to viewport 
+    if (clippedTriangles.size() <= 0)
+        return;
     viewportTransAndNormalize(clippedTriangles);
     rasterize(clippedTriangles);
-    
     
 }
 
@@ -575,6 +582,13 @@ OutVertex GPU::vertexProcessor(uint32_t vertexNumber)
 
     InVertex vertexToProcess = vertexPullerRead(vertexNumber);
     OutVertex processedVertex;
+    for (uint8_t i = 0; i < 3; i++)
+    {
+        processedVertex.gl_Position[i] = std::numeric_limits<float>::infinity() * -1.f;
+    }
+    processedVertex.gl_Position.w = 1;
+    
+
     //program with activeProgramID doesnt exist
     if (!isProgram(activeProgramID))
     {
@@ -869,12 +883,7 @@ void GPU::rasterize(std::vector<GPU::Triangle> triangles)
         float minX_float = (std::min({ triangle.triangleVertexes[0].gl_Position.x, triangle.triangleVertexes[1].gl_Position.x , triangle.triangleVertexes[2].gl_Position.x }));
         float maxY_float = (std::max({ triangle.triangleVertexes[0].gl_Position.y, triangle.triangleVertexes[1].gl_Position.y , triangle.triangleVertexes[2].gl_Position.y }));
         float minY_float = (std::min({ triangle.triangleVertexes[0].gl_Position.y, triangle.triangleVertexes[1].gl_Position.y , triangle.triangleVertexes[2].gl_Position.y }));
-
-
-
         
-
-
         //clip by framBuffer resolution
         int minX = (int)std::max(0.f, minX_float);
         int maxX = (int)std::min((float)getFramebufferWidth(), maxX_float);
@@ -890,9 +899,9 @@ void GPU::rasterize(std::vector<GPU::Triangle> triangles)
         float b2 = triangle.triangleVertexes[2].gl_Position.x - triangle.triangleVertexes[1].gl_Position.x;
         float b3 = triangle.triangleVertexes[0].gl_Position.x - triangle.triangleVertexes[2].gl_Position.x;
         //c for general line equation
-        int c1 = (int)(-1.f * (a1 * triangle.triangleVertexes[0].gl_Position.x + b1 * triangle.triangleVertexes[0].gl_Position.y));
-        int c2 = (int)(-1.f * (a2 * triangle.triangleVertexes[1].gl_Position.x + b2 * triangle.triangleVertexes[1].gl_Position.y));
-        int c3 = (int)(-1 * (a3 * triangle.triangleVertexes[2].gl_Position.x + b3 * triangle.triangleVertexes[2].gl_Position.y));
+        float c1 = -1.f * (a1 * triangle.triangleVertexes[0].gl_Position.x + b1 * triangle.triangleVertexes[0].gl_Position.y);
+        float c2 = -1.f * (a2 * triangle.triangleVertexes[1].gl_Position.x + b2 * triangle.triangleVertexes[1].gl_Position.y);
+        float c3 = -1.f * (a3 * triangle.triangleVertexes[2].gl_Position.x + b3 * triangle.triangleVertexes[2].gl_Position.y);
 
         float edge1_prime = a1 * (minX + 0.5f) + b1 * (minY + 0.5f) + c1;
         float edge2_prime = a2 * (minX + 0.5f) + b2 * (minY + 0.5f) + c2;

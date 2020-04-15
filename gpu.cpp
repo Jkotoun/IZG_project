@@ -9,13 +9,13 @@
 #include<algorithm>
 
 
-/// \addtogroup gpu_init
-/// @{
+ /// \addtogroup gpu_init
+ /// @{
 
-/**
- * @brief Constructor of GPU
- */
-GPU::GPU(){
+ /**
+  * @brief Constructor of GPU
+  */
+GPU::GPU() {
 
 
 }
@@ -23,21 +23,8 @@ GPU::GPU(){
 /**
  * @brief Destructor of GPU
  */
-GPU::~GPU(){  
-    
-    for (auto buffer : buffers)
-    {
-        deleteBuffer(buffer.first);
-    }
-    for (auto VP: vertexPullers)
-    {
-        deleteVertexPuller(VP.first);
-    }
-    for (auto prg : programs)
-    {
-        deleteProgram(prg.first);
-    }
-    deleteFramebuffer();
+GPU::~GPU() {
+
 
 
 }
@@ -48,16 +35,16 @@ GPU::~GPU(){
  * @{
  */
 
-/**
- * @brief This function allocates buffer on GPU.
- *
- * @param size size in bytes of new buffer on GPU.
- *
- * @return unique identificator of the buffer
- */
+ /**
+  * @brief This function allocates buffer on GPU.
+  *
+  * @param size size in bytes of new buffer on GPU.
+  *
+  * @return unique identificator of the buffer
+  */
 
 
-BufferID GPU::createBuffer(uint64_t size) {   
+BufferID GPU::createBuffer(uint64_t size) {
     Buffer* tmp = new Buffer();
     if (tmp == nullptr)
     {
@@ -72,7 +59,7 @@ BufferID GPU::createBuffer(uint64_t size) {
         return emptyID;
     }
     tmp->size = size;
-    
+
     BufferID id = reinterpret_cast<BufferID>(tmp);
     buffers.insert({ id, tmp });
     return id;
@@ -87,7 +74,7 @@ void GPU::deleteBuffer(BufferID buffer) {
     auto todelete = buffers.find(buffer);
     if (todelete != buffers.end())
     {
-        delete buffers.find(buffer)->second->data;
+        delete[] buffers.find(buffer)->second->data;
         delete buffers.find(buffer)->second;
         buffers.erase(buffer);
 
@@ -111,22 +98,22 @@ void GPU::setBufferData(BufferID buffer, uint64_t offset, uint64_t size, void co
         return;
     //uint8_t* - size is in byte, 1 step in std::copy = byte
     std::copy((uint8_t*)data, ((uint8_t*)(data)) + size, (uint8_t*)(buff->data + offset));
-   
+
 }
 
 /**
  * @brief This function downloads data from GPU.
  *
  * @param buffer specfies buffer
- * @param offset specifies the offset into the buffer from which data will be returned, measured in bytes. 
+ * @param offset specifies the offset into the buffer from which data will be returned, measured in bytes.
  * @param size specifies data size that will be copied
- * @param data specifies a pointer to the location where buffer data is returned. 
+ * @param data specifies a pointer to the location where buffer data is returned.
  */
 void GPU::getBufferData(BufferID buffer, uint64_t offset, uint64_t size, void* data)
 {
     if (!isBuffer(buffer))
         return;
-   //ID = address
+    //ID = address
     Buffer* buff = buffers.find(buffer)->second;
     if (size + offset > buff->size)
         return;
@@ -143,8 +130,8 @@ void GPU::getBufferData(BufferID buffer, uint64_t offset, uint64_t size, void* d
  * @return true if buffer points to existing buffer on the GPU.
  */
 bool GPU::isBuffer(BufferID buffer) {
-  return buffers.find(buffer) != buffers.end();
-    }
+    return buffers.find(buffer) != buffers.end();
+}
 
 /// @}
 
@@ -153,14 +140,14 @@ bool GPU::isBuffer(BufferID buffer) {
  * @{
  */
 
-/**
- * @brief This function creates new vertex puller settings on the GPU,
- *
- * @return unique vertex puller identificator
- */
-ObjectID GPU::createVertexPuller     (){
-  
-    VertexPuller *table = new VertexPuller();
+ /**
+  * @brief This function creates new vertex puller settings on the GPU,
+  *
+  * @return unique vertex puller identificator
+  */
+ObjectID GPU::createVertexPuller() {
+
+    VertexPuller* table = new VertexPuller();
     VertexPullerID tableID = reinterpret_cast<VertexPullerID>(table);
     vertexPullers.insert({ tableID, table });
     return tableID;
@@ -171,10 +158,10 @@ ObjectID GPU::createVertexPuller     (){
  *
  * @param vao vertex puller identificator
  */
-void     GPU::deleteVertexPuller     (VertexPullerID vao){
-     auto todelete = reinterpret_cast<VertexPuller*>(vao);
+void     GPU::deleteVertexPuller(VertexPullerID vao) {
+    auto todelete = reinterpret_cast<VertexPuller*>(vao);
     delete todelete;
-    vertexPullers.erase(vao); 
+    vertexPullers.erase(vao);
 }
 
 /**
@@ -187,10 +174,10 @@ void     GPU::deleteVertexPuller     (VertexPullerID vao){
  * @param offset offset in bytes
  * @param buffer id of buffer
  */
-void     GPU::setVertexPullerHead    (VertexPullerID vao,uint32_t head,AttributeType type,uint64_t stride,uint64_t offset,BufferID buffer){
+void     GPU::setVertexPullerHead(VertexPullerID vao, uint32_t head, AttributeType type, uint64_t stride, uint64_t offset, BufferID buffer) {
     VertexPuller* vpTable = reinterpret_cast<VertexPuller*>(vao);
     vpTable->heads.at(head) = { buffer, offset, stride, type,false };
-    }
+}
 
 /**
  * @brief This function sets vertex puller indexing.
@@ -199,19 +186,19 @@ void     GPU::setVertexPullerHead    (VertexPullerID vao,uint32_t head,Attribute
  * @param type type of index
  * @param buffer buffer with indices
  */
-void     GPU::setVertexPullerIndexing(VertexPullerID vao,IndexType type,BufferID buffer){
+void     GPU::setVertexPullerIndexing(VertexPullerID vao, IndexType type, BufferID buffer) {
     VertexPuller* vertexPuller = reinterpret_cast<VertexPuller*>(vao);
     vertexPuller->indexing.indexType = type;
     vertexPuller->indexing.bufferID = buffer;
- }
+}
 
 /**
  * @brief This function enables vertex puller's head.
  *
- * @param vao vertex puller 
+ * @param vao vertex puller
  * @param head head id
  */
-void     GPU::enableVertexPullerHead (VertexPullerID vao,uint32_t head){
+void     GPU::enableVertexPullerHead(VertexPullerID vao, uint32_t head) {
     VertexPuller* vpTable = reinterpret_cast<VertexPuller*>(vao);
     vpTable->heads.at(head).enabled = true;
 }
@@ -222,7 +209,7 @@ void     GPU::enableVertexPullerHead (VertexPullerID vao,uint32_t head){
  * @param vao vertex puller id
  * @param head head id
  */
-void     GPU::disableVertexPullerHead(VertexPullerID vao,uint32_t head){
+void     GPU::disableVertexPullerHead(VertexPullerID vao, uint32_t head) {
     VertexPuller* vpTable = reinterpret_cast<VertexPuller*>(vao);
     vpTable->heads.at(head).enabled = false;
 }
@@ -232,14 +219,14 @@ void     GPU::disableVertexPullerHead(VertexPullerID vao,uint32_t head){
  *
  * @param vao id of vertex puller
  */
-void     GPU::bindVertexPuller       (VertexPullerID vao){
-        activeVertexPullerID = vao;
+void     GPU::bindVertexPuller(VertexPullerID vao) {
+    activeVertexPullerID = vao;
 }
 
 /**
  * @brief This function deactivates vertex puller.
  */
-void     GPU::unbindVertexPuller     (){
+void     GPU::unbindVertexPuller() {
 
     activeVertexPullerID = emptyID;
 }
@@ -251,7 +238,7 @@ void     GPU::unbindVertexPuller     (){
  *
  * @return true, if vertex puller "vao" exists
  */
-bool     GPU::isVertexPuller         (VertexPullerID vao){
+bool     GPU::isVertexPuller(VertexPullerID vao) {
     return vertexPullers.find(vao) != vertexPullers.end();
 }
 
@@ -261,14 +248,14 @@ bool     GPU::isVertexPuller         (VertexPullerID vao){
  * @{
  */
 
-/**
- * @brief This function creates new shader program.
- *
- * @return shader program id
- */
-ProgramID        GPU::createProgram         (){
+ /**
+  * @brief This function creates new shader program.
+  *
+  * @return shader program id
+  */
+ProgramID        GPU::createProgram() {
     ShaderProgram* program = new ShaderProgram();
-    ProgramID id= reinterpret_cast<ProgramID>(program);
+    ProgramID id = reinterpret_cast<ProgramID>(program);
     programs.insert({ id, program });
     return id;
 }
@@ -278,9 +265,9 @@ ProgramID        GPU::createProgram         (){
  *
  * @param prg shader program id
  */
-void             GPU::deleteProgram         (ProgramID prg){
+void             GPU::deleteProgram(ProgramID prg) {
     auto todelete = programs.find(prg);
-  //  delete todelete->second;
+    //  delete todelete->second;
     programs.erase(prg);
 }
 
@@ -288,10 +275,10 @@ void             GPU::deleteProgram         (ProgramID prg){
  * @brief This function attaches vertex and frament shader to shader program.
  *
  * @param prg shader program
- * @param vs vertex shader 
+ * @param vs vertex shader
  * @param fs fragment shader
  */
-void             GPU::attachShaders         (ProgramID prg,VertexShader vs,FragmentShader fs){
+void             GPU::attachShaders(ProgramID prg, VertexShader vs, FragmentShader fs) {
     ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
     program->fragmentShader = fs;
     program->vertexShader = vs;
@@ -304,10 +291,10 @@ void             GPU::attachShaders         (ProgramID prg,VertexShader vs,Fragm
  * @param attrib id of attribute
  * @param type type of attribute
  */
-void             GPU::setVS2FSType          (ProgramID prg,uint32_t attrib,AttributeType type){
+void             GPU::setVS2FSType(ProgramID prg, uint32_t attrib, AttributeType type) {
     ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
     program->attributes.at(attrib) = type;
-    
+
 }
 
 /**
@@ -315,9 +302,9 @@ void             GPU::setVS2FSType          (ProgramID prg,uint32_t attrib,Attri
  *
  * @param prg shader program id
  */
-void             GPU::useProgram            (ProgramID prg){
-        activeProgramID = prg;
-    
+void             GPU::useProgram(ProgramID prg) {
+    activeProgramID = prg;
+
 }
 
 /**
@@ -327,7 +314,7 @@ void             GPU::useProgram            (ProgramID prg){
  *
  * @return true, if shader program "prg" exists.
  */
-bool             GPU::isProgram             (ProgramID prg){
+bool             GPU::isProgram(ProgramID prg) {
 
 
     return programs.find(prg) != programs.end();
@@ -340,7 +327,7 @@ bool             GPU::isProgram             (ProgramID prg){
  * @param uniformId id of uniform value (number of uniform values is stored in maxUniforms variable)
  * @param d value of uniform variable
  */
-void             GPU::programUniform1f      (ProgramID prg,uint32_t uniformId,float     const&d){
+void             GPU::programUniform1f(ProgramID prg, uint32_t uniformId, float     const& d) {
 
     ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
     if (uniformId < maxUniforms)
@@ -356,7 +343,7 @@ void             GPU::programUniform1f      (ProgramID prg,uint32_t uniformId,fl
  * @param uniformId id of uniform value (number of uniform values is stored in maxUniforms variable)
  * @param d value of uniform variable
  */
-void             GPU::programUniform2f      (ProgramID prg,uint32_t uniformId,glm::vec2 const&d){
+void             GPU::programUniform2f(ProgramID prg, uint32_t uniformId, glm::vec2 const& d) {
     ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
     if (uniformId < maxUniforms)
     {
@@ -371,7 +358,7 @@ void             GPU::programUniform2f      (ProgramID prg,uint32_t uniformId,gl
  * @param uniformId id of uniform value (number of uniform values is stored in maxUniforms variable)
  * @param d value of uniform variable
  */
-void             GPU::programUniform3f      (ProgramID prg,uint32_t uniformId,glm::vec3 const&d){
+void             GPU::programUniform3f(ProgramID prg, uint32_t uniformId, glm::vec3 const& d) {
     ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
     if (uniformId < maxUniforms)
     {
@@ -386,7 +373,8 @@ void             GPU::programUniform3f      (ProgramID prg,uint32_t uniformId,gl
  * @param uniformId id of uniform value (number of uniform values is stored in maxUniforms variable)
  * @param d value of uniform variable
  */
-void             GPU::programUniform4f      (ProgramID prg,uint32_t uniformId,glm::vec4 const&d){    ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
+void             GPU::programUniform4f(ProgramID prg, uint32_t uniformId, glm::vec4 const& d) {
+    ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
     if (uniformId < maxUniforms)
     {
         program->uniforms.uniform[uniformId].v4 = d;
@@ -400,8 +388,8 @@ void             GPU::programUniform4f      (ProgramID prg,uint32_t uniformId,gl
  * @param uniformId id of uniform value (number of uniform values is stored in maxUniforms variable)
  * @param d value of uniform variable
  */
-void             GPU::programUniformMatrix4f(ProgramID prg,uint32_t uniformId,glm::mat4 const&d){
-  /// Místo 1 floatu nahrává matici 4x4 (16 floatů).
+void             GPU::programUniformMatrix4f(ProgramID prg, uint32_t uniformId, glm::mat4 const& d) {
+    /// Místo 1 floatu nahrává matici 4x4 (16 floatů).
     ShaderProgram* program = reinterpret_cast<ShaderProgram*>(prg);
     if (uniformId < maxUniforms)
     {
@@ -419,14 +407,14 @@ void             GPU::programUniformMatrix4f(ProgramID prg,uint32_t uniformId,gl
  * @{
  */
 
-/**
- * @brief This function creates framebuffer on GPU.
- *
- * @param width width of framebuffer
- * @param height height of framebuffer
- */
-void GPU::createFramebuffer      (uint32_t width,uint32_t height){
-    frameBuffer.colorBuffer.resize(((size_t)width * height )+ size_t(width));
+ /**
+  * @brief This function creates framebuffer on GPU.
+  *
+  * @param width width of framebuffer
+  * @param height height of framebuffer
+  */
+void GPU::createFramebuffer(uint32_t width, uint32_t height) {
+    frameBuffer.colorBuffer.resize(((size_t)width * height) + size_t(width));
     frameBuffer.depthBuffer.resize(((size_t)width * height) + size_t(width));
     frameBuffer.width = width;
     frameBuffer.height = height;
@@ -435,8 +423,8 @@ void GPU::createFramebuffer      (uint32_t width,uint32_t height){
 /**
  * @brief This function deletes framebuffer.
  */
-void GPU::deleteFramebuffer      (){
-   frameBuffer.colorBuffer.clear();
+void GPU::deleteFramebuffer() {
+    frameBuffer.colorBuffer.clear();
     frameBuffer.colorBuffer.shrink_to_fit();
     frameBuffer.depthBuffer.clear();
     frameBuffer.depthBuffer.shrink_to_fit();
@@ -449,10 +437,10 @@ void GPU::deleteFramebuffer      (){
  * @param width new width of framebuffer
  * @param height new heght of framebuffer
  */
-void     GPU::resizeFramebuffer(uint32_t width,uint32_t height){
+void     GPU::resizeFramebuffer(uint32_t width, uint32_t height) {
     frameBuffer.depthBuffer.resize(((size_t)width * height) + size_t(width));
     frameBuffer.colorBuffer.resize(((size_t)width * height) + size_t(width));
-    
+
     frameBuffer.width = width;
     frameBuffer.height = height;
 
@@ -464,7 +452,7 @@ void     GPU::resizeFramebuffer(uint32_t width,uint32_t height){
  *
  * @return pointer to color buffer
  */
-uint8_t* GPU::getFramebufferColor  (){
+uint8_t* GPU::getFramebufferColor() {
     return (uint8_t*)&frameBuffer.colorBuffer[0];
 }
 
@@ -473,9 +461,9 @@ uint8_t* GPU::getFramebufferColor  (){
  *
  * @return pointer to dept buffer.
  */
-float* GPU::getFramebufferDepth    (){
-        float* value = &frameBuffer.depthBuffer[0];
-        return value;
+float* GPU::getFramebufferDepth() {
+    float* value = &frameBuffer.depthBuffer[0];
+    return value;
 }
 
 /**
@@ -483,7 +471,7 @@ float* GPU::getFramebufferDepth    (){
  *
  * @return width of framebuffer
  */
-uint32_t GPU::getFramebufferWidth (){
+uint32_t GPU::getFramebufferWidth() {
     return frameBuffer.width;
 }
 
@@ -492,7 +480,7 @@ uint32_t GPU::getFramebufferWidth (){
  *
  * @return height of framebuffer
  */
-uint32_t GPU::getFramebufferHeight(){
+uint32_t GPU::getFramebufferHeight() {
     return frameBuffer.height;
 }
 
@@ -503,42 +491,42 @@ uint32_t GPU::getFramebufferHeight(){
  * @{
  */
 
-/**
- * @brief This functino clears framebuffer.
- *
- * @param r red channel
- * @param g green channel
- * @param b blue channel
- * @param a alpha channel
- */
+ /**
+  * @brief This functino clears framebuffer.
+  *
+  * @param r red channel
+  * @param g green channel
+  * @param b blue channel
+  * @param a alpha channel
+  */
 void            GPU::clear(float r, float g, float b, float a) {
-        uint8_t red = r >= 1.f ? 255 : (uint8_t)(255.f * r);
-        uint8_t green = g >= 1.f ? 255 : (uint8_t)(255.f * g);
-        uint8_t blue = b >= 1.f ? 255 : (uint8_t)(255.f * b);
-        uint8_t alpha = a >= 1.f ? 255 : (uint8_t)(255.f * a);
-        for (Color& pixel : frameBuffer.colorBuffer)
-        {
-            pixel.r = red;
-            pixel.g = green;
-            pixel.b = blue;
-            pixel.a = alpha;
-        }
-        for (float& depth : frameBuffer.depthBuffer)
-        {
-            depth = std::numeric_limits<float>::infinity();
-        }
+    uint8_t red = r >= 1.f ? 255 : (uint8_t)(255.f * r);
+    uint8_t green = g >= 1.f ? 255 : (uint8_t)(255.f * g);
+    uint8_t blue = b >= 1.f ? 255 : (uint8_t)(255.f * b);
+    uint8_t alpha = a >= 1.f ? 255 : (uint8_t)(255.f * a);
+    for (Color& pixel : frameBuffer.colorBuffer)
+    {
+        pixel.r = red;
+        pixel.g = green;
+        pixel.b = blue;
+        pixel.a = alpha;
+    }
+    for (float& depth : frameBuffer.depthBuffer)
+    {
+        depth = std::numeric_limits<float>::infinity();
+    }
 
 }
 
 
-void            GPU::drawTriangles         (uint32_t  nofVertices){
-  /// \todo Tato funkce vykreslí trojúhelníky podle daného nastavení.<br>
-  /// Vrcholy se budou vybírat podle nastavení z aktivního vertex pulleru (pomocí bindVertexPuller).<br>
-  /// Vertex shader a fragment shader se zvolí podle aktivního shader programu (pomocí useProgram).<br>
-  /// Parametr "nofVertices" obsahuje počet vrcholů, který by se měl vykreslit (3 pro jeden trojúhelník).<br>
-    //active vertex puller
+void            GPU::drawTriangles(uint32_t  nofVertices) {
+    /// \todo Tato funkce vykreslí trojúhelníky podle daného nastavení.<br>
+    /// Vrcholy se budou vybírat podle nastavení z aktivního vertex pulleru (pomocí bindVertexPuller).<br>
+    /// Vertex shader a fragment shader se zvolí podle aktivního shader programu (pomocí useProgram).<br>
+    /// Parametr "nofVertices" obsahuje počet vrcholů, který by se měl vykreslit (3 pro jeden trojúhelník).<br>
+      //active vertex puller
 
- //assemble triangles from buffers data
+   //assemble triangles from buffers data
     if (nofVertices <= 0)
     {
         return;
@@ -563,21 +551,21 @@ void            GPU::drawTriangles         (uint32_t  nofVertices){
 std::vector<GPU::Triangle> GPU::assembleTriangles(uint32_t trianglesCount)
 {
 
-        std::vector<Triangle> triangles;
-        //used for vertexPuller heads offset / indexing - starts at 0
-        Triangle sad;
-        uint32_t vertexShaderInvocations = 0;
-        for (unsigned i = 0; i < (trianglesCount); i++)
+    std::vector<Triangle> triangles;
+    //used for vertexPuller heads offset / indexing - starts at 0
+    Triangle sad;
+    uint32_t vertexShaderInvocations = 0;
+    for (unsigned i = 0; i < (trianglesCount); i++)
+    {
+        Triangle newTriangle;
+        for (unsigned j = 0; j < 3; j++)
         {
-            Triangle newTriangle;
-            for (unsigned j = 0; j < 3; j++)
-            {
-                newTriangle.triangleVertexes[j] = vertexProcessor(vertexShaderInvocations++);
-            }
-
-            triangles.push_back(newTriangle);
+            newTriangle.triangleVertexes[j] = vertexProcessor(vertexShaderInvocations++);
         }
-        return triangles;
+
+        triangles.push_back(newTriangle);
+    }
+    return triangles;
 }
 OutVertex GPU::vertexProcessor(uint32_t vertexNumber)
 {
@@ -638,7 +626,8 @@ InVertex GPU::vertexPullerRead(uint32_t vertexNumber)
     return vertex;
 }
 std::vector<GPU::Triangle> GPU::clipTriangles(std::vector<GPU::Triangle> triangles)
-{    uint64_t trianglesCount = triangles.size();
+{
+    uint64_t trianglesCount = triangles.size();
     std::vector<GPU::Triangle> clippedTriangles;
     for (auto triangle : triangles)
     {
@@ -663,13 +652,13 @@ std::vector<GPU::Triangle> GPU::clipTriangles(std::vector<GPU::Triangle> triangl
             if (!inViewSpace(triangle.triangleVertexes[0]))
             {
                 //index 0 out
-                
+
                 //newTriangle1.triangleVertexes[1] = newTriangle2.triangleVertexes[1] = triangle.triangleVertexes[1];
                 newTriangle1.triangleVertexes[1] = newTriangle2.triangleVertexes[2] = triangle.triangleVertexes[2];
-                newTriangle1.triangleVertexes[2] = newTriangle2.triangleVertexes[1] =  cutEdge(triangle.triangleVertexes[0], triangle.triangleVertexes[1]);
-                
+                newTriangle1.triangleVertexes[2] = newTriangle2.triangleVertexes[1] = cutEdge(triangle.triangleVertexes[0], triangle.triangleVertexes[1]);
+
                 newTriangle2.triangleVertexes[0] = triangle.triangleVertexes[1];
-                newTriangle1.triangleVertexes[0] =cutEdge(triangle.triangleVertexes[0], triangle.triangleVertexes[2]);
+                newTriangle1.triangleVertexes[0] = cutEdge(triangle.triangleVertexes[0], triangle.triangleVertexes[2]);
             }
             else if (!inViewSpace(triangle.triangleVertexes[1]))
             {
@@ -677,11 +666,11 @@ std::vector<GPU::Triangle> GPU::clipTriangles(std::vector<GPU::Triangle> triangl
                 newTriangle1.triangleVertexes[1] = newTriangle2.triangleVertexes[2] = triangle.triangleVertexes[2];
                 newTriangle1.triangleVertexes[2] = newTriangle2.triangleVertexes[1] = cutEdge(triangle.triangleVertexes[0], triangle.triangleVertexes[1]);
 
-                
+
                 newTriangle2.triangleVertexes[0] = triangle.triangleVertexes[0];
                 newTriangle1.triangleVertexes[0] = cutEdge(triangle.triangleVertexes[1], triangle.triangleVertexes[2]);
             }
-            else if(!inViewSpace(triangle.triangleVertexes[2]))
+            else if (!inViewSpace(triangle.triangleVertexes[2]))
             {
                 //out index 2
                 newTriangle1.triangleVertexes[1] = newTriangle2.triangleVertexes[2] = triangle.triangleVertexes[1];
@@ -691,7 +680,7 @@ std::vector<GPU::Triangle> GPU::clipTriangles(std::vector<GPU::Triangle> triangl
                 newTriangle1.triangleVertexes[0] = triangle.triangleVertexes[0];
                 newTriangle2.triangleVertexes[0] = cutEdge(triangle.triangleVertexes[1], triangle.triangleVertexes[2]);
             }
-          
+
 
             clippedTriangles.push_back(newTriangle1);
             clippedTriangles.push_back(newTriangle2);
@@ -802,8 +791,8 @@ void GPU::perFragment(uint32_t x, uint32_t y, float depth, OutFragment color)
         for (uint32_t i = 0; i < 4; i++)
         {
 
-            p_colorBuffer[(y * getFramebufferWidth() + x) * 4 +  i] = (color.gl_FragColor[i] >= 1.f) ? 255 : (uint8_t)((color.gl_FragColor[i]) * 255.f);
-        }  
+            p_colorBuffer[(y * getFramebufferWidth() + x) * 4 + i] = (color.gl_FragColor[i] >= 1.f) ? 255 : (uint8_t)((color.gl_FragColor[i]) * 255.f);
+        }
     }
 }
 
@@ -819,7 +808,7 @@ InFragment GPU::assembleInFragment(uint64_t x, uint64_t y, GPU::Triangle triangl
     //lambda 0
     float midPixelX = (float)x + 0.5f;
     float midPixelY = (float)y + 0.5f;
-    triangleVertexesCoords[0] = { midPixelX, midPixelY};
+    triangleVertexesCoords[0] = { midPixelX, midPixelY };
     float lambda0 = triangleArea(triangleVertexesCoords) / mainTriangleArea;
     //lambda 1
     triangleVertexesCoords[1] = { triangle.triangleVertexes[0].gl_Position.x, triangle.triangleVertexes[0].gl_Position.y };
@@ -837,22 +826,22 @@ InFragment GPU::assembleInFragment(uint64_t x, uint64_t y, GPU::Triangle triangl
 
     float depth = (((triangleCoords[0].z * lambdas[0]) / triangleCoords[0].w) + ((triangleCoords[1].z * lambdas[1]) / triangleCoords[1].w) + ((triangleCoords[2].z * lambdas[2]) / triangleCoords[2].w))
         / ((lambdas[0] / triangleCoords[0].w) + (lambdas[1] / triangleCoords[1].w) + (lambdas[2] / triangleCoords[2].w));
-    
+
     InFragment fragment;
     fragment.gl_FragCoord.x = midPixelX;
-        fragment.gl_FragCoord.y = midPixelY;
+    fragment.gl_FragCoord.y = midPixelY;
 
     fragment.gl_FragCoord.z = depth;
     ShaderProgram* program = programs.find(activeProgramID)->second;
-   
+
     for (uint8_t i = 0; i < maxAttributes; i++)
     {
         std::array<glm::vec4, 3> attributes = { triangle.triangleVertexes[0].attributes[i].v4, triangle.triangleVertexes[1].attributes[i].v4, triangle.triangleVertexes[2].attributes[i].v4 };
         if (program->attributes[i] != AttributeType::EMPTY)
         {
             for (uint8_t j = 0; j < (uint8_t)program->attributes[i]; j++)
-            { 
-                fragment.attributes[i].v4[j] = (((attributes[0][j]* lambdas[0]) / triangleCoords[0].w) + ((attributes[1][j] * lambdas[1]) / triangleCoords[1].w) + ((attributes[2][j] * lambdas[2]) / triangleCoords[2].w))
+            {
+                fragment.attributes[i].v4[j] = (((attributes[0][j] * lambdas[0]) / triangleCoords[0].w) + ((attributes[1][j] * lambdas[1]) / triangleCoords[1].w) + ((attributes[2][j] * lambdas[2]) / triangleCoords[2].w))
                     / ((lambdas[0] / triangleCoords[0].w) + (lambdas[1] / triangleCoords[1].w) + (lambdas[2] / triangleCoords[2].w));
             }
         }
@@ -860,18 +849,18 @@ InFragment GPU::assembleInFragment(uint64_t x, uint64_t y, GPU::Triangle triangl
     fragment.gl_FragCoord.w = 1;
     return fragment;
 }
-float GPU::triangleArea(std::array<std::array<float,2>, 3> edgeVectors)
+float GPU::triangleArea(std::array<std::array<float, 2>, 3> edgeVectors)
 {
     std::array<float, 3> edgeLengths;
     for (size_t i = 0; i < edgeVectors.size(); i++)
     {
         float xDifference = edgeVectors[i][0] - edgeVectors[(i + 1) % 3][0];
         float yDifference = edgeVectors[i][1] - edgeVectors[(i + 1) % 3][1];
-        edgeLengths[i] = glm::length(glm::vec2(xDifference,yDifference));
+        edgeLengths[i] = glm::length(glm::vec2(xDifference, yDifference));
     }
     float s = (edgeLengths[0] + edgeLengths[1] + edgeLengths[2]) / 2.f;
     return std::sqrt(s * (s - edgeLengths[0]) * (s - edgeLengths[1]) * (s - edgeLengths[2]));
-    
+
 }
 
 void GPU::rasterize(std::vector<GPU::Triangle> triangles)
@@ -883,34 +872,35 @@ void GPU::rasterize(std::vector<GPU::Triangle> triangles)
         float minX_float = (std::min({ triangle.triangleVertexes[0].gl_Position.x, triangle.triangleVertexes[1].gl_Position.x , triangle.triangleVertexes[2].gl_Position.x }));
         float maxY_float = (std::max({ triangle.triangleVertexes[0].gl_Position.y, triangle.triangleVertexes[1].gl_Position.y , triangle.triangleVertexes[2].gl_Position.y }));
         float minY_float = (std::min({ triangle.triangleVertexes[0].gl_Position.y, triangle.triangleVertexes[1].gl_Position.y , triangle.triangleVertexes[2].gl_Position.y }));
-        
+
+
         //clip by framBuffer resolution
         int minX = (int)std::max(0.f, minX_float);
         int maxX = (int)std::min((float)getFramebufferWidth(), maxX_float);
-        int minY = (int)std::max(0.f,  minY_float);
+        int minY = (int)std::max(0.f, minY_float);
         int maxY = (int)std::min((float)getFramebufferHeight(), maxY_float);
-    
+
+
+      
         //a and b parametes of normal vector for general line equation
         float a1 = triangle.triangleVertexes[0].gl_Position.y - triangle.triangleVertexes[1].gl_Position.y;
         float a2 = triangle.triangleVertexes[1].gl_Position.y - triangle.triangleVertexes[2].gl_Position.y;
         float a3 = triangle.triangleVertexes[2].gl_Position.y - triangle.triangleVertexes[0].gl_Position.y;
-        
+
         float b1 = triangle.triangleVertexes[1].gl_Position.x - triangle.triangleVertexes[0].gl_Position.x;
         float b2 = triangle.triangleVertexes[2].gl_Position.x - triangle.triangleVertexes[1].gl_Position.x;
         float b3 = triangle.triangleVertexes[0].gl_Position.x - triangle.triangleVertexes[2].gl_Position.x;
         //c for general line equation
-        int c1 = (int)(-1.f * (a1 * triangle.triangleVertexes[0].gl_Position.x + b1 * triangle.triangleVertexes[0].gl_Position.y));
-        int c2 = (int)(-1.f * (a2 * triangle.triangleVertexes[1].gl_Position.x + b2 * triangle.triangleVertexes[1].gl_Position.y));
-        int c3 = (int)(-1.f * (a3 * triangle.triangleVertexes[2].gl_Position.x + b3 * triangle.triangleVertexes[2].gl_Position.y));
+        float c1 = (-1.f * (a1 * triangle.triangleVertexes[0].gl_Position.x + b1 * triangle.triangleVertexes[0].gl_Position.y));
+        float c2 = (-1.f * (a2 * triangle.triangleVertexes[1].gl_Position.x + b2 * triangle.triangleVertexes[1].gl_Position.y));
+        float c3 = (-1.f * (a3 * triangle.triangleVertexes[2].gl_Position.x + b3 * triangle.triangleVertexes[2].gl_Position.y));
 
         float edge1_prime = a1 * (minX + 0.5f) + b1 * (minY + 0.5f) + c1;
         float edge2_prime = a2 * (minX + 0.5f) + b2 * (minY + 0.5f) + c2;
         float edge3_prime = a3 * (minX + 0.5f) + b3 * (minY + 0.5f) + c3;
         float edge1_edited, edge2_edited, edge3_edited;
 
-
-
-        for (int y = minY ; y <= maxY; y++)
+        for (int y = minY; y <= maxY; y++)
         {
             edge1_edited = edge1_prime;
             edge2_edited = edge2_prime;
@@ -918,12 +908,18 @@ void GPU::rasterize(std::vector<GPU::Triangle> triangles)
 
             for (int x = minX; x <= maxX; x++)
             {
-                if (edge1_edited >=0 && edge2_edited >= 0 && edge3_edited >= 0)
+                if (edge1_edited >= 0 && edge2_edited >= 0 && edge3_edited >= 0)
                 {
 
-                    InFragment fragment = assembleInFragment(x,y,triangle);
+                    InFragment fragment = assembleInFragment(x, y, triangle);
                     OutFragment color = fragmentProcessor(fragment);
                     perFragment(x, y, fragment.gl_FragCoord.z, color);
+                }
+                else
+                {
+                    int boga = x;
+                    int boga2 = y;
+                    int lukasek = 54;
                 }
                 edge1_edited += a1;
                 edge2_edited += a2;
@@ -934,7 +930,7 @@ void GPU::rasterize(std::vector<GPU::Triangle> triangles)
             edge3_prime += b3;
         }
     }
-    }
+}
 
 
 

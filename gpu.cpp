@@ -25,17 +25,18 @@ GPU::GPU() {
  */
 GPU::~GPU() {
     deleteFramebuffer();
-    for (auto buffer : buffers)
+
+    for (int i = 0; i < (int)buffers.size(); i++)
     {
-        deleteBuffer(buffer.first);
+        deleteBuffer(buffers.begin()->first);
     }
-    for (auto vertexpuller : vertexPullers)
+    for (int i = 0; i < (int)vertexPullers.size(); i++)
     {
-        deleteVertexPuller(vertexpuller.first);
+        deleteVertexPuller(vertexPullers.begin()->first);
     }
-    for (auto program : programs)
+    for (int i = 0; i < (int)programs.size(); i++)
     {
-        deleteProgram(program.first);
+        deleteProgram(programs.begin()->first);
     }
 
 }
@@ -82,13 +83,24 @@ BufferID GPU::createBuffer(uint64_t size) {
  * @param buffer buffer identificator
  */
 void GPU::deleteBuffer(BufferID buffer) {
-    auto todelete = buffers.find(buffer);
-    if (todelete != buffers.end())
+    std::map<BufferID, Buffer*>::iterator todelete = buffers.find(buffer);
+    
+    if (todelete != buffers.end() && todelete->second != nullptr)
     {
-        delete[] buffers.find(buffer)->second->data;
-        delete buffers.find(buffer)->second;
-        buffers.erase(buffer);
-
+        
+        if (todelete->second->data != nullptr)
+        {
+            delete[] todelete->second->data;
+            todelete->second = nullptr;
+        }
+            
+        delete todelete->second;
+        todelete->second = nullptr;
+       
+       buffers.erase(todelete);
+        
+        
+        
     }
 }
 
@@ -170,9 +182,14 @@ ObjectID GPU::createVertexPuller() {
  * @param vao vertex puller identificator
  */
 void     GPU::deleteVertexPuller(VertexPullerID vao) {
-    VertexPuller* todelete = reinterpret_cast<VertexPuller*>(vao);
-    delete todelete;
-    vertexPullers.erase(vao);
+    auto todelete = vertexPullers.find(vao);
+    if(todelete != vertexPullers.end() && todelete->second != nullptr)
+    {
+        delete todelete->second;
+        todelete->second = nullptr;
+        vertexPullers.erase(vao);
+    }
+
 }
 
 /**
@@ -278,8 +295,14 @@ ProgramID        GPU::createProgram() {
  */
 void             GPU::deleteProgram(ProgramID prg) {
     auto todelete = programs.find(prg);
-    delete todelete->second;
-    programs.erase(prg);
+    if (todelete != programs.end() && todelete->second != nullptr)
+    {
+        delete todelete->second;
+        todelete->second = nullptr;
+        programs.erase(prg);
+
+    }
+
 }
 
 /**
@@ -883,6 +906,8 @@ void GPU::rasterize(std::vector<GPU::Triangle> triangles)
         float minX_float = (std::min({ triangle.triangleVertexes[0].gl_Position.x, triangle.triangleVertexes[1].gl_Position.x , triangle.triangleVertexes[2].gl_Position.x }));
         float maxY_float = (std::max({ triangle.triangleVertexes[0].gl_Position.y, triangle.triangleVertexes[1].gl_Position.y , triangle.triangleVertexes[2].gl_Position.y }));
         float minY_float = (std::min({ triangle.triangleVertexes[0].gl_Position.y, triangle.triangleVertexes[1].gl_Position.y , triangle.triangleVertexes[2].gl_Position.y }));
+
+
         //clip by framBuffer resolution
         int minX = (int)std::max(0.f, minX_float);
         int maxX = (int)std::min((float)getFramebufferWidth(), maxX_float);
@@ -903,6 +928,7 @@ void GPU::rasterize(std::vector<GPU::Triangle> triangles)
         float c1 = (-1.f * (a1 * triangle.triangleVertexes[0].gl_Position.x + b1 * triangle.triangleVertexes[0].gl_Position.y));
         float c2 = (-1.f * (a2 * triangle.triangleVertexes[1].gl_Position.x + b2 * triangle.triangleVertexes[1].gl_Position.y));
         float c3 = (-1.f * (a3 * triangle.triangleVertexes[2].gl_Position.x + b3 * triangle.triangleVertexes[2].gl_Position.y));
+
         float edge1_prime = a1 * (minX + 0.5f) + b1 * (minY + 0.5f) + c1;
         float edge2_prime = a2 * (minX + 0.5f) + b2 * (minY + 0.5f) + c2;
         float edge3_prime = a3 * (minX + 0.5f) + b3 * (minY + 0.5f) + c3;
@@ -916,7 +942,7 @@ void GPU::rasterize(std::vector<GPU::Triangle> triangles)
 
             for (int x = minX; x <= maxX; x++)
             {
-                if ((edge1_edited >= 0 && edge2_edited >= 0 && edge3_edited >= 0))
+                if (edge1_edited >= 0 && edge2_edited >= 0 && edge3_edited >= 0)
                 {
 
                     InFragment fragment = assembleInFragment(x, y, triangle);
